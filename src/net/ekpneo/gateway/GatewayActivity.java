@@ -8,6 +8,8 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.CompoundButton;
 import android.widget.ToggleButton;
@@ -16,6 +18,8 @@ import android.util.Log;
 public class GatewayActivity extends Activity {
 	
 	public static final String TAG = "GatewayActivity";
+	
+	private static final int MENU_SETTINGS_ID = 1;
 	
 	private ToggleButton mToggleButton = null;
 	
@@ -116,4 +120,28 @@ public class GatewayActivity extends Activity {
 			Log.e(TAG, "Error while stopping gateway: " + e.getMessage());
 		}
 	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		
+		MenuItem settingsItem = menu.add(0, MENU_SETTINGS_ID, 0, R.string.menu_settings);
+		settingsItem.setIcon(android.R.drawable.ic_menu_preferences);
+		
+		return true;
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		switch (item.getItemId()) {
+		case MENU_SETTINGS_ID:
+			startActivity(new Intent(this, SettingsActivity.class));
+			break;
+		}
+		
+		return super.onMenuItemSelected(featureId, item);
+	}
+
+
+	
 }
