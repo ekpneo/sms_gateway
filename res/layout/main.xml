@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:padding="20dip">
+
+	<ToggleButton
+		android:textOff="Disabled"
+		android:textOn="Enabled"
+		android:id="@+id/btnEnable" 
+		android:layout_width="fill_parent" 
+		android:layout_height="wrap_content"
+		android:layout_marginBottom="10dip">
+	</ToggleButton>
+
+	<TextView 
+		android:text="Debug Crap" 
+		android:id="@+id/txtDebug" 
+		android:layout_width="fill_parent" 
+		android:layout_height="wrap_content">
+	</TextView>
+
+</LinearLayout>
