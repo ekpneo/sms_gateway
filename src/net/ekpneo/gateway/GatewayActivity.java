@@ -11,29 +11,35 @@ import android.os.RemoteException;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.CompoundButton;
 import android.widget.ToggleButton;
-import android.widget.TextView;
 import android.util.Log;
 
 public class GatewayActivity extends Activity {
 	
 	public static final String TAG = "GatewayActivity";
 	
-	private TextView mText = null;
 	private ToggleButton mToggleButton = null;
 	
 	private IGatewayService mService;
+	private boolean mServiceBound = false;
+	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			mService = IGatewayService.Stub.asInterface(service);
+			mServiceBound = true;
+			
 			try {
 				mToggleButton.setChecked(mService.isEnabled());
 			} catch (RemoteException e) {
-				Log.d(TAG, "Hi Mom.");
+				Log.e(TAG, "Error getting gateway status on bind: " + e.getMessage());
 			}
+			
+			Log.d(TAG, "Bound to gateway service");
 		}
 		
 		public void onServiceDisconnected(ComponentName name) {
 			mService = null;
+			mServiceBound = false;
+			Log.d(TAG, "Disconnected from gateway service");
 		}
 	};
 	
@@ -44,34 +50,19 @@ public class GatewayActivity extends Activity {
         
         setContentView(R.layout.main);
         
-        mText = (TextView) findViewById(R.id.txtDebug);
-        mText.setText("App Started\n");
-        
         mToggleButton = (ToggleButton) findViewById(R.id.btnEnable);
         mToggleButton.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-
-        
-			public void onCheckedChanged(CompoundButton buttonView,
-					boolean isChecked) {
-				
-				try{
-					if (isChecked) {
-						mText.append("Enabling service\n");
-						mService.enable();
-					} else {
-						mText.append("Disabling service\n");
-						mService.disable();
-					}
-				} catch (RemoteException e) {
-					Log.d(TAG, "Daddy touches me.");
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if (isChecked == true) {
+					enableGateway();
+				} else {
+					disableGateway();
 				}
-
 			}
 
         });
         
-        Intent intent = new Intent();
-        intent.setClass(getApplication(), GatewayService.class);
+        Intent intent = new Intent(this, GatewayService.class);
         startService(intent);
     }
     
@@ -79,17 +70,50 @@ public class GatewayActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 		
-		Intent intent = new Intent();
-		intent.setClass(getApplication(), GatewayService.class);
-		if (!bindService(intent, mServiceConn, Context.BIND_AUTO_CREATE)) {
-			Log.d(TAG, "Unable to bind to service");
+		Intent intent = new Intent(this, GatewayService.class);
+		Log.d(TAG, "Binding to gateway service");
+		
+		mServiceBound = bindService(intent, mServiceConn, Context.BIND_AUTO_CREATE);
+		if (!mServiceBound) {
+			Log.e(TAG, "Error binding to service");
 		}
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		unbindService(mServiceConn);
+		
+		if (mServiceBound) {
+			Log.d(TAG, "Unbinding from gateway service");
+			unbindService(mServiceConn);
+		}
 	}
     
+	protected void enableGateway() {
+		if (!mServiceBound) {
+			Log.e(TAG, "Service not bound while trying to start gateway");
+			return;
+		}
+			
+		try {
+			if (mService.isEnabled()) return;
+			mService.enable();
+		} catch (RemoteException e) {
+			Log.e(TAG, "Error while starting gateway: " + e.getMessage());
+		}
+	}
+	
+	protected void disableGateway() {
+		if (!mServiceBound) {
+			Log.e(TAG, "Service not bound while trying to stop gateway");
+			return;
+		}
+			
+		try {
+			if (!mService.isEnabled()) return;
+			mService.disable();
+		} catch (RemoteException e) {
+			Log.e(TAG, "Error while stopping gateway: " + e.getMessage());
+		}
+	}
 }
