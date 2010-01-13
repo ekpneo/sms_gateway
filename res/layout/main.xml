@@ -15,7 +15,7 @@
 	</ToggleButton>
 
 	<TextView 
-		android:text="Debug Crap" 
+		android:text="" 
 		android:id="@+id/txtDebug" 
 		android:layout_width="fill_parent" 
 		android:layout_height="wrap_content">
