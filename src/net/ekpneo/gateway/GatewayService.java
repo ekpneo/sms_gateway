@@ -7,9 +7,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
@@ -20,10 +22,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class GatewayService extends Service {
-	private static final String TAG = GatewayActivity.TAG;
+	private static final String TAG = "GatewayService";
 	
 	private static final String SMS_ACTION = "android.provider.Telephony.SMS_RECEIVED";
-	private static final String POST_URI = "http://192.168.1.100:8008/sms/";
+	private static final String SERVER_URL = "http://127.0.0.1/sms/";
 	
 	private static final int NOTIFICATION_ID = 1;
 	private Notification mNotification;
@@ -73,17 +75,14 @@ public class GatewayService extends Service {
 			notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 			PendingIntent contentIntent = PendingIntent.getActivity(GatewayService.this, 0, notificationIntent, 0);
 
-			if (mNotification == null) {
-			    mNotification = new Notification(R.drawable.status_icon, "SMS Gateway active", System.currentTimeMillis());
-			    mNotification.flags |= Notification.FLAG_ONGOING_EVENT;
-			    mNotification.flags |= Notification.FLAG_NO_CLEAR;
-			    
-			    mNotification.setLatestEventInfo(getApplicationContext(), "SMS Gateway", "SMS Gateway active", contentIntent);
-			}
-			
+			mNotification.setLatestEventInfo(
+					getApplicationContext(), 
+					getText(R.string.app_name), 
+					getText(R.string.notifictation_active), 
+					contentIntent);
 			startForeground(NOTIFICATION_ID, mNotification);
-			mEnabled = true;
 			
+			mEnabled = true;
 			return true;
 		}
 		
@@ -117,11 +116,14 @@ public class GatewayService extends Service {
 					continue;
 				}
 				
+				SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(GatewayService.this);
+				String serverUrl = preferences.getString(SettingsActivity.SERVER_URL, SERVER_URL);
+				
 				SmsMessage message = mUploadQueue.peek();
 				HashMap<String,String> queryParams = new HashMap<String, String>();
-				queryParams.put("originatingAddress", message.getDisplayOriginatingAddress());
+				queryParams.put("from", message.getDisplayOriginatingAddress());
 				queryParams.put("text", message.getDisplayMessageBody());
-				Map<String,String> response = uploadData(POST_URI, queryParams);
+				Map<String,String> response = uploadData(serverUrl, queryParams);
 				
 				if (response != null) {
 					mUploadQueue.poll();
@@ -151,6 +153,12 @@ public class GatewayService extends Service {
 		
 		mUploadQueue = new ConcurrentLinkedQueue<SmsMessage>();
 		mCondVar = new ConditionVariable();
+		
+		mNotification = new Notification(R.drawable.status_icon, 
+				getText(R.string.notifictation_active), 
+				System.currentTimeMillis());
+		mNotification.flags |= Notification.FLAG_ONGOING_EVENT;
+		mNotification.flags |= Notification.FLAG_NO_CLEAR;
 	}
 	
 	@Override
