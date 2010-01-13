@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, GatewayActivity!</string>
     <string name="app_name">SMS Gateway</string>
+    
+    <string name="menu_settings">Settings</string>
+    
+    <string name="notifictation_active">SMS Gateway active</string>
+    
+    <string name="settings_label">Gateway Settings</string>
+    <string name="settings_category_server">Server Settings</string>
+    <string name="settings_server_url">URL</string>
+    <string name="settings_server_url_summary">The URL to POST an SMS to</string>
 </resources>
