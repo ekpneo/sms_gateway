@@ -23,7 +23,8 @@
             android:name=".SettingsActivity"
             android:label="@string/settings_label" />
 
-        <service android:name="GatewayService" />
+        <service android:name="PushService" />
+        
     </application>
     
     <uses-sdk android:minSdkVersion="5" />

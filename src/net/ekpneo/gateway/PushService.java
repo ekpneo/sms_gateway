@@ -21,19 +21,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class GatewayService extends Service {
-	private static final String TAG = "GatewayService";
+public class PushService extends Service {
+	private static final String TAG = "PushService";
 	
 	private static final String SMS_ACTION = "android.provider.Telephony.SMS_RECEIVED";
-	private static final String SERVER_URL = "http://127.0.0.1/sms/";
+	private static final String SERVER_INCOMING_URL = "http://127.0.0.1/sms/";
 	
 	private static final int NOTIFICATION_ID = 1;
 	private Notification mNotification;
 	
 	private boolean mEnabled = false;
 	
-	private ConcurrentLinkedQueue<SmsMessage> mUploadQueue;
-	private ConditionVariable mCondVar;
+	// The queue of SMSs received that need to be pushed to the server
+	private ConcurrentLinkedQueue<SmsMessage> mIncomingQueue;
+	private ConditionVariable mIncomingCondVar;
 	
 	private BroadcastReceiver mSmsReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
@@ -52,8 +53,8 @@ public class GatewayService extends Service {
 			for (int i = 0; i < pdus.length; i++) {
 				message = SmsMessage.createFromPdu((byte[]) pdus[i]);
 				Log.d(TAG, "SMS from: " + message.getDisplayOriginatingAddress() + "\n");
-				mUploadQueue.add(message);
-				mCondVar.open();
+				mIncomingQueue.add(message);
+				mIncomingCondVar.open();
 			}
 		}
 	};
@@ -69,11 +70,11 @@ public class GatewayService extends Service {
 			IntentFilter intentFilter = new IntentFilter(SMS_ACTION);
 			registerReceiver(mSmsReceiver, intentFilter);
 			
-			startThread();
+			startPushThread();
 			
 			Intent notificationIntent = new Intent(getApplication(), GatewayActivity.class);
 			notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-			PendingIntent contentIntent = PendingIntent.getActivity(GatewayService.this, 0, notificationIntent, 0);
+			PendingIntent contentIntent = PendingIntent.getActivity(PushService.this, 0, notificationIntent, 0);
 
 			mNotification.setLatestEventInfo(
 					getApplicationContext(), 
@@ -89,7 +90,7 @@ public class GatewayService extends Service {
 		public boolean disable() {
 			Log.d(TAG, "Disabling service");
 			
-			stopThread();
+			stopPushThread();
 			
 			Log.d(TAG, "Unregistering receiver");
 			unregisterReceiver(mSmsReceiver);
@@ -105,45 +106,46 @@ public class GatewayService extends Service {
 
 	};
 	
-	private Thread mUploadThread;
-	private Runnable mUploadTask = new Runnable() {	
+	private Thread mPushThread = null;
+	private Runnable mPushTask = new Runnable() {	
 		public void run() {
-			while(Thread.currentThread() == mUploadThread) {
-				if(mUploadQueue.size() == 0 ) {
+			while(Thread.currentThread() == mPushThread) {
+				if(mIncomingQueue.size() == 0 ) {
 					Log.d(TAG, "Queue is empty. Waiting.");
-					mCondVar.close();
-					mCondVar.block();
+					mIncomingCondVar.close();
+					mIncomingCondVar.block();
 					continue;
 				}
 				
-				SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(GatewayService.this);
-				String serverUrl = preferences.getString(SettingsActivity.SERVER_INCOMING_URL, SERVER_URL);
+				SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(PushService.this);
+				String serverUrl = preferences.getString(SettingsActivity.SERVER_INCOMING_URL, SERVER_INCOMING_URL);
 				
-				SmsMessage message = mUploadQueue.peek();
+				SmsMessage message = mIncomingQueue.peek();
 				HashMap<String,String> queryParams = new HashMap<String, String>();
 				queryParams.put("from", message.getDisplayOriginatingAddress());
 				queryParams.put("text", message.getDisplayMessageBody());
 				Map<String,String> response = uploadData(serverUrl, queryParams);
 				
 				if (response != null) {
-					mUploadQueue.poll();
+					mIncomingQueue.poll();
 				}
 			}
 		}
 	};
-
-	public synchronized void startThread() {
-		if (mUploadThread == null) {
-			mUploadThread = new Thread(mUploadTask, "UploadThread");
-			mUploadThread.start();
-		}
+	
+	public synchronized void startPushThread() {
+		if (mPushThread == null) {
+			mPushThread = new Thread(mPushTask, "PushThread");
+			mPushThread.start();
+		}		
 	}
 	
-	public synchronized void stopThread() {
-		if (mUploadThread != null) {
-			Thread moribund = mUploadThread;
-			mUploadThread = null;
-			mCondVar.open();
+	
+	public synchronized void stopPushThread() {
+		if (mPushThread != null) {
+			Thread moribund = mPushThread;
+			mPushThread = null;
+			mIncomingCondVar.open();
 			moribund.interrupt();
 		}
 	}
@@ -151,8 +153,8 @@ public class GatewayService extends Service {
 	public void onCreate() {
 		super.onCreate();
 		
-		mUploadQueue = new ConcurrentLinkedQueue<SmsMessage>();
-		mCondVar = new ConditionVariable();
+		mIncomingQueue = new ConcurrentLinkedQueue<SmsMessage>();
+		mIncomingCondVar = new ConditionVariable();
 		
 		mNotification = new Notification(R.drawable.status_icon, 
 				getText(R.string.notifictation_active), 

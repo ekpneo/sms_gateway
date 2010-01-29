@@ -66,7 +66,7 @@ public class GatewayActivity extends Activity {
 
         });
         
-        Intent intent = new Intent(this, GatewayService.class);
+        Intent intent = new Intent(this, PushService.class);
         startService(intent);
     }
     
@@ -74,7 +74,7 @@ public class GatewayActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 		
-		Intent intent = new Intent(this, GatewayService.class);
+		Intent intent = new Intent(this, PushService.class);
 		Log.d(TAG, "Binding to gateway service");
 		
 		mServiceBound = bindService(intent, mServiceConn, Context.BIND_AUTO_CREATE);
