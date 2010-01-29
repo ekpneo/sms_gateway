@@ -6,11 +6,19 @@
   	android:title="@string/settings_category_server">
   	
   	<EditTextPreference 
-  		android:name="@string/settings_server_url"
-  		android:title="@string/settings_server_url"
-  		android:summary="@string/settings_server_url_summary"
-  		android:defaultValue="http://192.168.1.100:8008/sms/"
-  		android:key="server_url"
+  		android:name="@string/settings_server_incoming_url"
+  		android:title="@string/settings_server_incoming_url"
+  		android:summary="@string/settings_server_incoming_url_summary"
+  		android:defaultValue="http://192.168.1.100:8008/sms/incoming"
+  		android:key="server_incoming_url"
+  	/>
+  	
+  	<EditTextPreference 
+  		android:name="@string/settings_server_outgoing_url"
+  		android:title="@string/settings_server_outgoing_url"
+  		android:summary="@string/settings_server_outgoing_url_summary"
+  		android:defaultValue="http://192.168.1.100:8008/sms/outgoing"
+  		android:key="server_outgoing_url"
   	/>
   	
   </PreferenceCategory>

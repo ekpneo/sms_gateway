@@ -8,6 +8,10 @@
     
     <string name="settings_label">Gateway Settings</string>
     <string name="settings_category_server">Server Settings</string>
-    <string name="settings_server_url">URL</string>
-    <string name="settings_server_url_summary">The URL to POST an SMS to</string>
+    
+    <string name="settings_server_incoming_url">Incoming (Push) URL</string>
+    <string name="settings_server_incoming_url_summary">The URL to POST an SMS to</string>
+    
+    <string name="settings_server_outgoing_url">Outgoing (Poll) URL</string>
+    <string name="settings_server_outgoing_url_summary">The URL to Poll to send SMS</string>
 </resources>

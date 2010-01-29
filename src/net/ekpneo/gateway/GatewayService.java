@@ -117,7 +117,7 @@ public class GatewayService extends Service {
 				}
 				
 				SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(GatewayService.this);
-				String serverUrl = preferences.getString(SettingsActivity.SERVER_URL, SERVER_URL);
+				String serverUrl = preferences.getString(SettingsActivity.SERVER_INCOMING_URL, SERVER_URL);
 				
 				SmsMessage message = mUploadQueue.peek();
 				HashMap<String,String> queryParams = new HashMap<String, String>();
