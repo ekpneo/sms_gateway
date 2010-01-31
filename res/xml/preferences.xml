@@ -21,5 +21,13 @@
   		android:key="server_outgoing_url"
   	/>
   	
+  	<EditTextPreference 
+        android:name="@string/settings_server_secret"
+        android:title="@string/settings_server_secret"
+        android:summary="@string/settings_server_secret_summary"
+        android:defaultValue="uber-secret"
+        android:key="server_secret"
+    />
+  	
   </PreferenceCategory>
 </PreferenceScreen>

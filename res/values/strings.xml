@@ -14,4 +14,7 @@
     
     <string name="settings_server_outgoing_url">Outgoing (Poll) URL</string>
     <string name="settings_server_outgoing_url_summary">The URL to Poll to send SMS</string>
+
+    <string name="settings_server_secret">Shared Secret</string>
+    <string name="settings_server_secret_summary">The shared secret</string>
 </resources>

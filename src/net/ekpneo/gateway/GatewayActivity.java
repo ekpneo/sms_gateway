@@ -58,15 +58,15 @@ public class GatewayActivity extends Activity {
         mToggleButton.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 				if (isChecked == true) {
-					enableGateway();
+					enableSmsService();
 				} else {
-					disableGateway();
+					disableSmsService();
 				}
 			}
 
         });
         
-        Intent intent = new Intent(this, PushService.class);
+        Intent intent = new Intent(this, SmsService.class);
         startService(intent);
     }
     
@@ -74,12 +74,12 @@ public class GatewayActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 		
-		Intent intent = new Intent(this, PushService.class);
-		Log.d(TAG, "Binding to gateway service");
+		Intent intent = new Intent(this, SmsService.class);
+		Log.d(TAG, "Binding to PushService");
 		
 		mServiceBound = bindService(intent, mServiceConn, Context.BIND_AUTO_CREATE);
 		if (!mServiceBound) {
-			Log.e(TAG, "Error binding to service");
+			Log.e(TAG, "Error binding to PushService");
 		}
 	}
 
@@ -92,10 +92,10 @@ public class GatewayActivity extends Activity {
 			unbindService(mServiceConn);
 		}
 	}
-    
-	protected void enableGateway() {
+	
+	protected void enableSmsService() {
 		if (!mServiceBound) {
-			Log.e(TAG, "Service not bound while trying to start gateway");
+			Log.e(TAG, "Service not bound while trying to start PushService");
 			return;
 		}
 			
@@ -103,13 +103,13 @@ public class GatewayActivity extends Activity {
 			if (mService.isEnabled()) return;
 			mService.enable();
 		} catch (RemoteException e) {
-			Log.e(TAG, "Error while starting gateway: " + e.getMessage());
+			Log.e(TAG, "Error while starting PushService: " + e.getMessage());
 		}
 	}
 	
-	protected void disableGateway() {
+	protected void disableSmsService() {
 		if (!mServiceBound) {
-			Log.e(TAG, "Service not bound while trying to stop gateway");
+			Log.e(TAG, "Service not bound while trying to stop PushService");
 			return;
 		}
 			
@@ -117,7 +117,7 @@ public class GatewayActivity extends Activity {
 			if (!mService.isEnabled()) return;
 			mService.disable();
 		} catch (RemoteException e) {
-			Log.e(TAG, "Error while stopping gateway: " + e.getMessage());
+			Log.e(TAG, "Error while stopping PushService: " + e.getMessage());
 		}
 	}
 

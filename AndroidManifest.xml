@@ -23,11 +23,10 @@
             android:name=".SettingsActivity"
             android:label="@string/settings_label" />
 
-        <service android:name="PushService" />
-        
+        <service android:name="SmsService" />
     </application>
     
-    <uses-sdk android:minSdkVersion="5" />
+    <uses-sdk android:minSdkVersion="4" />
 
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
