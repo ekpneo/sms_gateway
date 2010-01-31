@@ -350,7 +350,7 @@ public class SmsService extends Service {
 				Intent intent = new Intent(SMS_SEND_ACTION);
 				intent.putExtra(SMS_SEND_EXTRA_ID, message[0]);
 				PendingIntent sentIntent = PendingIntent.getBroadcast(SmsService.this, 0, intent, 
-						PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_UPDATE_CURRENT);
+						PendingIntent.FLAG_ONE_SHOT);
 				smsManager.sendTextMessage(message[1], null, message[2], sentIntent, null);
 			}
 			
