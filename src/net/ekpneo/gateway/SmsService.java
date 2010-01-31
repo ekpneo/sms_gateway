@@ -32,7 +32,7 @@ public class SmsService extends Service {
 	
 	private static final String SMS_RECEIVE_ACTION = "android.provider.Telephony.SMS_RECEIVED";
 	private static final String SMS_SEND_ACTION = "net.ekpneo.gateway.SMS_SENT";
-	private static final String SMS_SEND_EXTRA_ID = "id";
+	private static final String SMS_SEND_EXTRA_ID = "net.ekpneo.gateway.MessageIds";
 	
 	private static final String SERVER_INCOMING_URL = "http://127.0.0.1/sms/incoming";
 	private static final String SERVER_OUTGOING_URL = "http://127.0.0.1/sms/outgoing";
@@ -47,7 +47,7 @@ public class SmsService extends Service {
 			if (!intent.getAction().equals(SMS_RECEIVE_ACTION))
 				return;
 			
-			Log.d(TAG, "Received SMS(s)");
+			Log.d(TAG, "SMSReceivedReceiver - Received SMS(s)");
 			
 			Bundle bundle = intent.getExtras();
 			if (bundle == null)
@@ -58,7 +58,7 @@ public class SmsService extends Service {
 			
 			for (int i = 0; i < pdus.length; i++) {
 				message = SmsMessage.createFromPdu((byte[]) pdus[i]);
-				Log.d(TAG, "SMS from: " + message.getDisplayOriginatingAddress() + "\n");
+				Log.d(TAG, "SMSReceivedReceiver - SMS from: " + message.getDisplayOriginatingAddress() + "\n");
 				mPushQueue.add(message);
 				mPushCondVar.open();
 			}
@@ -70,9 +70,9 @@ public class SmsService extends Service {
 			if (!intent.getAction().equals(SMS_SEND_ACTION))
 				return;
 			
-			Log.d(TAG, "Sent SMS");
+			Log.d(TAG, "SMSSentReceiver - SMS Sent");
 			if (this.getResultCode() != Activity.RESULT_OK) {
-				Log.e(TAG, "Error sending SMS");
+				Log.e(TAG, "SMSSentReceiver - Error sending SMS");
 				return;
 			}
 
@@ -96,6 +96,7 @@ public class SmsService extends Service {
 			intentFilter = new IntentFilter(SMS_SEND_ACTION);
 			registerReceiver(mSmsSentReceiver, intentFilter);
 			
+			Log.d(TAG, "Starting threads");
 			startPushThread();
 			startSendThread();
 			startPollThread();
@@ -110,10 +111,12 @@ public class SmsService extends Service {
 					getText(R.string.notifictation_active), 
 					contentIntent);
 			
+			// Android 1.6
 			setForeground(true);
 			NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 			notificationManager.notify(NOTIFICATION_ID, mNotification);
-			//startForeground(NOTIFICATION_ID, mNotification);
+			
+			//startForeground(NOTIFICATION_ID, mNotification); // Android 2.0
 			
 			mEnabled = true;
 			return true;
@@ -130,7 +133,9 @@ public class SmsService extends Service {
 			unregisterReceiver(mSmsReceivedReceiver);
 			unregisterReceiver(mSmsSentReceiver);
 			
-			//stopForeground(true);
+			//stopForeground(true); // Android 2.0
+			
+			// Android 1.6
 			setForeground(false);
 			NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 			notificationManager.cancel(NOTIFICATION_ID);
@@ -181,14 +186,17 @@ public class SmsService extends Service {
 	private Thread mPushThread = null;
 	private Runnable mPushTask = new Runnable() {	
 		public void run() {
+			Log.d(TAG, "PushThread - Starting");
+			
 			while(Thread.currentThread() == mPushThread) {
 				if(mPushQueue.size() == 0 ) {
-					Log.d(TAG, "Queue is empty. Waiting.");
+					Log.d(TAG, "PushThread - Queue is empty. Waiting.");
 					mPushCondVar.close();
 					mPushCondVar.block();
 					continue;
 				}
 				
+				Log.d(TAG, "PushThread - Pushing SMS");
 				SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(SmsService.this);
 				String serverUrl = preferences.getString(SettingsActivity.SERVER_INCOMING_URL, SERVER_INCOMING_URL);
 				String serverSecret = preferences.getString(SettingsActivity.SERVER_SECRET, "");
@@ -210,7 +218,7 @@ public class SmsService extends Service {
 				}
 			}
 			
-			Log.d(TAG, "PushThread stopping");
+			Log.d(TAG, "PushThread - Stopping");
 		}
 	};
 	
@@ -239,8 +247,10 @@ public class SmsService extends Service {
 	private Thread mPollThread = null;
 	private Runnable mPollTask = new Runnable() {	
 		public void run() {
+			Log.d(TAG, "PollThread - Starting");
+			
 			while(Thread.currentThread() == mPollThread) {
-				Log.d(TAG, "PollThread polling");
+				Log.d(TAG, "PollThread - Polling");
 			
 				SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(SmsService.this);
 				String serverUrl = preferences.getString(SettingsActivity.SERVER_OUTGOING_URL, SERVER_OUTGOING_URL);
@@ -263,17 +273,17 @@ public class SmsService extends Service {
 				} else if (response != null && response.get("code").equals("200")) {
 					handleResponse(response);
 				} else {
-					Log.w(TAG, "PollThread server returned " + response.get("code"));					
+					Log.w(TAG, "PollThread - Server returned " + response.get("code"));					
 				}
 
 				try {
 					Thread.sleep(30 * 1000);
 				} catch (InterruptedException e) {
-					Log.e(TAG, "PollThread interrupted: " + e.getMessage());
+					Log.e(TAG, "PollThread - Interrupted: " + e.getMessage());
 				}
 			}
 			
-			Log.d(TAG, "PollThread stopping");
+			Log.d(TAG, "PollThread - Stopping");
 		}
 		
 		private void handleResponse(Map<String,String> response) {			
@@ -331,7 +341,7 @@ public class SmsService extends Service {
 	private Thread mSendThread;
 	private Runnable mSendTask = new Runnable() {
 		public void run() {
-			Log.d(TAG, "SendThread started");
+			Log.d(TAG, "SendThread - Started");
 			
 			SmsManager smsManager = SmsManager.getDefault();
 			
@@ -347,6 +357,7 @@ public class SmsService extends Service {
 				if (message == null)
 					continue;
 				
+				Log.d(TAG, "SendThread - Sending SMS");
 				Intent intent = new Intent(SMS_SEND_ACTION);
 				intent.putExtra(SMS_SEND_EXTRA_ID, message[0]);
 				PendingIntent sentIntent = PendingIntent.getBroadcast(SmsService.this, 0, intent, 
@@ -354,7 +365,7 @@ public class SmsService extends Service {
 				smsManager.sendTextMessage(message[1], null, message[2], sentIntent, null);
 			}
 			
-			Log.d(TAG, "SendThread stopped");
+			Log.d(TAG, "SendThread - Stopped");
 		}
 	};
 	
