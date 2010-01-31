@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -32,7 +33,7 @@ public class SmsService extends Service {
 	
 	private static final String SMS_RECEIVE_ACTION = "android.provider.Telephony.SMS_RECEIVED";
 	private static final String SMS_SEND_ACTION = "net.ekpneo.gateway.SMS_SENT";
-	private static final String SMS_SEND_EXTRA_ID = "net.ekpneo.gateway.MessageIds";
+	private static final String SMS_SEND_EXTRA_PREFIX = "net.ekpneo.gateway.Message.";
 	
 	private static final String SERVER_INCOMING_URL = "http://127.0.0.1/sms/incoming";
 	private static final String SERVER_OUTGOING_URL = "http://127.0.0.1/sms/outgoing";
@@ -75,9 +76,15 @@ public class SmsService extends Service {
 				Log.e(TAG, "SMSSentReceiver - Error sending SMS");
 				return;
 			}
-
+			
+			Set<String> keys = intent.getExtras().keySet();
+			
 			synchronized (mSentMutex) {
-				mSentMessages.add(intent.getStringExtra(SMS_SEND_EXTRA_ID));
+				for (String key : keys) {
+					if(key.startsWith(SMS_SEND_EXTRA_PREFIX)) {
+						mSentMessages.add(key.substring(SMS_SEND_EXTRA_PREFIX.length()));
+					}
+				}
 			}
 		}
 	};
@@ -347,7 +354,7 @@ public class SmsService extends Service {
 			
 			while(Thread.currentThread() == mSendThread) {
 				if(mSendQueue.size() == 0 ) {
-					Log.d(TAG, "SendQueue is empty. Waiting.");
+					Log.d(TAG, "SendThread - Queue is empty. Waiting.");
 					mSendCondVar.close();
 					mSendCondVar.block();
 					continue;
@@ -359,9 +366,9 @@ public class SmsService extends Service {
 				
 				Log.d(TAG, "SendThread - Sending SMS");
 				Intent intent = new Intent(SMS_SEND_ACTION);
-				intent.putExtra(SMS_SEND_EXTRA_ID, message[0]);
+				intent.putExtra(SMS_SEND_EXTRA_PREFIX + message[0], true);
 				PendingIntent sentIntent = PendingIntent.getBroadcast(SmsService.this, 0, intent, 
-						PendingIntent.FLAG_ONE_SHOT);
+						PendingIntent.FLAG_UPDATE_CURRENT);
 				smsManager.sendTextMessage(message[1], null, message[2], sentIntent, null);
 			}
 			
