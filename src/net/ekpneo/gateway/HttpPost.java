@@ -198,7 +198,7 @@ public class HttpPost {
             out.flush();
             
             InputStream in = conn.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in), 1024);
             
             StringBuilder sb = new StringBuilder();
             
